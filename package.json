@@ -19,5 +19,8 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "typescript": "4.9.4"
+  },
+  "devDependencies": {
+    "@quri/squiggle-components": "file:../squiggle/packages/components/quri-squiggle-components-v0.6.0.tgz"
   }
 }
