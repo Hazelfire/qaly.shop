@@ -1,0 +1,18 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+
+datasource db {
+  url      = env("DATABASE_URL")
+  provider = "sqlite"
+}
+
+model Charity {
+  id    Int      @id @default(autoincrement())
+  name  String
+}
+
+model GiftCard {
+  id     Int     @id @default(autoincrement())
+  total  Decimal
+}

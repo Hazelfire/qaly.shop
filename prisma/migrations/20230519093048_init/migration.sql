@@ -1,0 +1,11 @@
+-- CreateTable
+CREATE TABLE "Charity" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "name" TEXT NOT NULL
+);
+
+-- CreateTable
+CREATE TABLE "GiftCard" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "total" DECIMAL NOT NULL
+);
