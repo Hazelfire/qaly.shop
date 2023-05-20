@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
-import Layout from "./Layout";
-import { useRouter } from "next/router";
+import { FormEventHandler, useState } from "react";
+import Layout from "./_layout";
 import NotFound from "./404";
 import { PrismaClient } from "@prisma/client";
 import { GetServerSideProps } from "next";
@@ -19,27 +18,34 @@ type Donation = {
 };
 
 type RedeemPageProps = {
-  giftCardValue: number;
+  giftCard: { id: string; value: number };
   charities: Charity[];
   notFound: boolean;
 };
 
 const RedeemPage: React.FC<RedeemPageProps> = ({
-  giftCardValue,
+  giftCard,
   charities,
   notFound,
 }) => {
   const [donations, setDonations] = useState<Donation[]>([
-    { charityId: "", amount: 0 },
+    {
+      charityId: "",
+      amount: 0,
+    },
   ]);
+  const [statusMessage, setStatusMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleDonationChange = (
-    index: number,
-    field: string,
-    value: string
-  ) => {
+  const handleDonationAmountChange = (index: number, value: string) => {
     const newDonations = [...donations];
-    newDonations[index][field] = value;
+    newDonations[index].amount = Number(value);
+    setDonations(newDonations);
+  };
+
+  const handleDonationIdChange = (index: number, value: string) => {
+    const newDonations = [...donations];
+    newDonations[index].charityId = value;
     setDonations(newDonations);
   };
 
@@ -52,10 +58,36 @@ const RedeemPage: React.FC<RedeemPageProps> = ({
     0
   );
 
-  const handleSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
-    // Submit this form to your API for processing
-    console.log(donations);
+  const handleSubmit: FormEventHandler<HTMLFormElement> = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("/api/redeem", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          gift_card_id: giftCard.id,
+          charities: donations.map(({ charityId, amount }) => ({
+            id: Number(charityId),
+            amount,
+          })),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setStatusMessage("Gift card has been successfully redeemed");
+      } else {
+        setStatusMessage(data.message);
+      }
+    } catch (error) {
+      console.error(error);
+      setStatusMessage("An unexpected error occurred");
+    }
+
+    setIsLoading(false);
   };
 
   if (notFound) {
@@ -66,16 +98,14 @@ const RedeemPage: React.FC<RedeemPageProps> = ({
     <Layout>
       <div>
         <h1>Redeem your gift card</h1>
-        <p>Gift Card Value: ${giftCardValue}</p>
+        <p>Gift Card Value: ${giftCard.value}</p>
         <form onSubmit={handleSubmit}>
           {donations.map((donation, index) => (
             <div key={index}>
               <label>Charity:</label>
               <select
                 value={donation.charityId}
-                onChange={(e) =>
-                  handleDonationChange(index, "charityId", e.target.value)
-                }
+                onChange={(e) => handleDonationIdChange(index, e.target.value)}
                 required
               >
                 <option value="">--Select a charity--</option>
@@ -90,21 +120,21 @@ const RedeemPage: React.FC<RedeemPageProps> = ({
               <input
                 type="number"
                 min="1"
-                max={giftCardValue - totalDonation}
+                max={giftCard.value - (totalDonation - donation.amount)}
                 value={donation.amount}
                 onChange={(e) =>
-                  handleDonationChange(index, "amount", e.target.value)
+                  handleDonationAmountChange(index, e.target.value)
                 }
                 required
               />
             </div>
           ))}
-          {totalDonation < giftCardValue && (
+          {totalDonation < giftCard.value && (
             <button type="button" onClick={addDonation}>
               Add more donations
             </button>
           )}
-          <button type="submit" disabled={totalDonation !== giftCardValue}>
+          <button type="submit" disabled={totalDonation !== giftCard.value}>
             Submit
           </button>
         </form>
@@ -153,16 +183,22 @@ const RedeemPage: React.FC<RedeemPageProps> = ({
           }
         `}</style>
       </div>
+      {isLoading && <div>Loading...</div>}
+      {statusMessage && <div>{statusMessage}</div>}
     </Layout>
   );
 };
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-  const { giftCardId } = context.query;
+  let { giftCardId } = context.query;
 
+  // If it's an array (multiple entries in query string) choose first one
+  if (typeof giftCardId === "object") {
+    giftCardId = giftCardId[0];
+  }
   // Fetch gift card total from Prisma
   const giftCard = await prisma.giftCard.findUnique({
-    where: { id: Number(giftCardId) },
+    where: { id: giftCardId },
   });
 
   // Fetch charities from Prisma
@@ -174,7 +210,10 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   return {
     props: {
       notFound: !giftCard,
-      giftCardValue: giftCard?.total || 0,
+      giftCard: {
+        id: giftCardId,
+        value: giftCard?.total.toNumber() || 0,
+      },
       charities: charities,
     },
   };

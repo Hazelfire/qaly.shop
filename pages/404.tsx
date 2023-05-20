@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Layout from "./Layout";
+import Layout from "./_layout";
 
 const NotFoundPage = () => (
   <Layout>
@@ -10,9 +10,7 @@ const NotFoundPage = () => (
         The page you are looking for might have been removed, had its name
         changed, or is temporarily unavailable.
       </p>
-      <Link href="/">
-        <a>Go Back Home</a>
-      </Link>
+      <Link href="/">Go Back Home</Link>
 
       <style jsx>{`
         .container {

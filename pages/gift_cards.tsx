@@ -1,104 +1,199 @@
-import styled from "styled-components";
-import Layout from "./Layout";
-import { useState } from "react";
-import { loadStripe } from "@stripe/stripe-js";
+import React, { useState, useEffect, ChangeEvent } from "react";
+import Layout from "./_layout";
+import StripeCheckout from "react-stripe-checkout";
 
-// Replace with your own Stripe publishable key
-const stripePromise = loadStripe("pk_test_218Wbt0Tcdvhoy44q2rBg3bw");
+const GiftCardPage = () => {
+  const [total, setTotal] = useState(0);
+  const [stripeFees, setStripeFees] = useState(0);
+  const [recipientEmail, setRecipientEmail] = useState("");
+  const [currency, setCurrency] = useState("USD");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [transactionStatus, setTransactionStatus] = useState("");
+  const [isTransactionSuccess, setIsTransactionSuccess] = useState<
+    boolean | null
+  >(null);
 
-const Form = styled.form`
-  display: flex;
-  flex-direction: column;
-  max-width: 400px;
-  margin: auto;
-  padding: 20px;
-`;
+  // New state variables
+  const [purchaserName, setPurchaserName] = useState("");
+  const [purchaserEmail, setPurchaserEmail] = useState("");
+  const [recipientName, setRecipientName] = useState("");
+  const [customMessage, setCustomMessage] = useState("");
 
-const Label = styled.label`
-  font-size: 1.2em;
-  margin-bottom: 10px;
-`;
+  useEffect(() => {
+    // Calculate Stripe's processing fees
+    setStripeFees(total * 0.029 + 0.3);
+  }, [total]);
 
-const Input = styled.input`
-  margin-bottom: 20px;
-  padding: 10px;
-  font-size: 1em;
-`;
+  const handleTotalChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setTotal(Number(event.target.value));
+  };
 
-const Button = styled.button`
-  background-color: #007bff;
-  color: white;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 1em;
+  const handleRecipientEmailChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setRecipientEmail(event.target.value);
+  };
 
-  &:hover {
-    background-color: #0056b3;
-  }
-`;
+  const handleCurrencyChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    setCurrency(event.target.value);
+  };
 
-function GiftCardPurchasePage() {
-  const [email, setEmail] = useState("");
-  const [amount, setAmount] = useState("");
+  const onToken = async (token: { id: string }) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/charge", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          purchaserName: purchaserName,
+          message: customMessage,
+          purchaserEmail: purchaserEmail,
+          recipientName: recipientName,
+          recipientEmail: recipientEmail,
+          giftCardValue: total,
+          currency: currency,
+          stripeToken: token.id,
+        }),
+      });
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-
-    // Create a new payment intent on the server
-    const response = await fetch("/api/charge", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        amount: amount,
-        email: email,
-      }),
-    });
-
-    const paymentIntent = await response.json();
-
-    // Fetch your Stripe publishable key if not already loaded
-    const stripe = await stripePromise;
-
-    const { error } = await stripe.confirmCardPayment(
-      paymentIntent.client_secret
-    );
-
-    if (error) {
-      console.log(error);
-    } else {
-      console.log("Payment succeeded!");
+      const data = await response.json();
+      if (response.ok) {
+        setIsTransactionSuccess(true);
+        setTransactionStatus("Transaction was successful!");
+      } else {
+        setIsTransactionSuccess(false);
+        setTransactionStatus(`Transaction failed: ${data.error}`);
+      }
+    } catch (error) {
+      setIsTransactionSuccess(false);
+      setTransactionStatus(`Transaction failed`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <Layout>
-      <Form onSubmit={handleSubmit}>
-        <Label>
-          {"Recipient's Email"}:
-          <Input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </Label>
-        <Label>
-          Gift Card Amount:
-          <Input
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            required
-          />
-        </Label>
-        <Button type="submit">Purchase Gift Card</Button>
-      </Form>
+      <div className="container">
+        <h1>Buy a Charity Gift Card</h1>
+
+        <input
+          type="text"
+          value={purchaserName}
+          onChange={(e) => setPurchaserName(e.target.value)}
+          placeholder="Your name"
+        />
+
+        <input
+          type="email"
+          value={purchaserEmail}
+          onChange={(e) => setPurchaserEmail(e.target.value)}
+          placeholder="Your email"
+        />
+
+        <input
+          type="text"
+          value={recipientName}
+          onChange={(e) => setRecipientName(e.target.value)}
+          placeholder="Recipient name"
+        />
+
+        <input
+          type="email"
+          value={recipientEmail}
+          onChange={handleRecipientEmailChange}
+          placeholder="Recipient email"
+        />
+
+        <label>
+          Select currency:
+          <select value={currency} onChange={handleCurrencyChange}>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+            <option value="AUD">AUD</option>
+            {/* Add more options as needed */}
+          </select>
+        </label>
+
+        <input
+          type="text"
+          value={customMessage}
+          onChange={(e) => setCustomMessage(e.target.value)}
+          placeholder="Your custom message"
+        />
+
+        <input
+          type="text"
+          value={total}
+          onChange={handleTotalChange}
+          placeholder="Gift card total"
+        />
+
+        <p>
+          {"You will also be charged Stripe's processing fees of $"}
+          {stripeFees.toFixed(2)}.
+        </p>
+
+        <StripeCheckout
+          stripeKey={process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY || ""}
+          token={onToken}
+          amount={(total + stripeFees) * 100} // amount in cents
+          currency={currency}
+          email={recipientEmail}
+        />
+
+        {isLoading && <div>Processing your transaction...</div>}
+        {transactionStatus && (
+          <div className={isTransactionSuccess ? "success" : "error"}>
+            {transactionStatus}
+          </div>
+        )}
+
+        <style jsx>{`
+          .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1em;
+          }
+
+          h1 {
+            color: #333;
+            margin-bottom: 1em;
+          }
+
+          input {
+            margin-bottom: 0.5em;
+            padding: 0.5em;
+            width: 100%;
+            max-width: 300px;
+          }
+
+          label {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 300px;
+            margin-bottom: 0.5em;
+          }
+
+          select {
+            margin-left: 0.5em;
+          }
+
+          .success {
+            color: green;
+          }
+
+          .error {
+            color: red;
+          }
+        `}</style>
+      </div>
     </Layout>
   );
-}
+};
 
-export default GiftCardPurchasePage;
+export default GiftCardPage;
