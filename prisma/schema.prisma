@@ -1,29 +1,28 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = env("DB_PROVIDER")
-  url      = env("DATABASE_URL")
+  provider          = "postgresql"
+  url               = env("POSTGRES_PRISMA_URL")
+  directUrl         = env("POSTGRES_URL_NON_POOLING")
+  shadowDatabaseUrl = env("POSTGRES_URL_NON_POOLING")
 }
 
 model Charity {
-  id    Int      @id @default(autoincrement())
-  name  String
-  stripeId  String
+  id       Int    @id @default(autoincrement())
+  name     String
+  stripeId String
 }
 
 model GiftCard {
-  id     String     @id
-  total  Decimal
-  currency  String
-  purchaserName String
+  id             String  @id
+  total          Decimal
+  currency       String
+  purchaserName  String
   purchaserEmail String
-  recipientName String
+  recipientName  String
   recipientEmail String
   stripeChargeId String
-  isRedeemed  Boolean @default(false)
+  isRedeemed     Boolean @default(false)
 }
