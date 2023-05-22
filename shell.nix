@@ -3,6 +3,7 @@
 pkgs.mkShell {
   buildInputs = with pkgs; [
     sqlite
+    docker-compose
     postgresql
   ];
 }
