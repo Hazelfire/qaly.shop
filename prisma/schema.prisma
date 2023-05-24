@@ -12,6 +12,10 @@ datasource db {
 model Charity {
   id       Int    @id @default(autoincrement())
   name     String
+  description String
+  logoUrl String
+  homepageLink String
+  donateUrl String
   stripeId String
 }
 

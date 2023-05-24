@@ -3,18 +3,45 @@ import Stripe from 'stripe';
 import { PrismaClient } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 import { Resend } from 'resend';
-import handle from './yourApiHandlerFile'; // replace with the actual file path
+import handle from '@/api/charge'; // replace with the actual file path
 
-jest.mock('stripe');
-jest.mock('@prisma/client');
+jest.mock("stripe", () => {
+  return jest.fn().mockImplementation(() => {
+    return {
+      charges: {
+        create: jest.fn().mockResolvedValue({ id: "chargeId" }),
+      },
+    };
+  });
+});
+
+jest.mock('@prisma/client', () => {
+  return {
+    PrismaClient: jest.fn().mockImplementation(() => {
+      return {
+        giftCard: { create: jest.fn().mockResolvedValue({}) },
+      };
+    })
+  };
+});
+
 jest.mock('uuid');
-jest.mock('resend');
-
-const MockedStripe = Stripe as jest.MockedClass<typeof Stripe>;
-const MockedPrismaClient = PrismaClient as jest.MockedClass<typeof PrismaClient>;
-const MockedResend = Resend as jest.MockedClass<typeof Resend>;
+jest.mock("resend", () => {
+  return {
+    Resend: jest.fn().mockImplementation(() => {
+      return {
+        sendEmail: jest.fn().mockResolvedValue({}),
+      };
+    })
+  };
+});
 
 describe('api handler', () => {
+  beforeAll(() => {
+
+    const uuid = 'uuid';
+    (uuidv4 as jest.MockedFunction<typeof uuidv4>).mockReturnValue(uuid);
+  })
   it('handles successful payment', async () => {
     const mockedRequest = ({
       method: 'POST',
@@ -35,27 +62,9 @@ describe('api handler', () => {
       json: jest.fn(),
     } as unknown) as NextApiResponse;
 
-    const mockedStripeInstance = {
-      charges: { create: jest.fn().mockResolvedValue({ id: 'chargeId' }) },
-    };
-    MockedStripe.mockImplementation(() => mockedStripeInstance as any);
-
-    const mockedPrismaInstance = {
-      giftCard: { create: jest.fn().mockResolvedValue({}) },
-    };
-    MockedPrismaClient.mockImplementation(() => mockedPrismaInstance as any);
-
-    const mockedResendInstance = {
-      sendEmail: jest.fn().mockResolvedValue({}),
-    };
-    MockedResend.mockImplementation(() => mockedResendInstance as any);
-
-    const uuid = 'uuid';
-    (uuidv4 as jest.MockedFunction<typeof uuidv4>).mockReturnValue(uuid);
-
     await handle(mockedRequest, mockedResponse);
 
-    expect(mockedResponse.status).toHaveBeenCalledWith(200);
     expect(mockedResponse.json).toHaveBeenCalledWith({ status: 'Your payment was successful' });
+    expect(mockedResponse.status).toHaveBeenCalledWith(200);
   });
 });

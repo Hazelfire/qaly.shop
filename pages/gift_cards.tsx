@@ -1,6 +1,7 @@
 import React, { useState, useEffect, ChangeEvent } from "react";
 import Layout from "./_layout";
 import StripeCheckout from "react-stripe-checkout";
+import {Form, FormInput, FormNumber, FormSelect, FormTextarea} from 'components/Form'
 
 const GiftCardPage = () => {
   const [total, setTotal] = useState(0);
@@ -71,61 +72,65 @@ const GiftCardPage = () => {
       setIsLoading(false);
     }
   };
-
   return (
     <Layout>
-      <div className="container">
-        <h1>Buy a Charity Gift Card</h1>
-
-        <input
-          type="text"
+      <Form
+        title="Buy Gift Card"
+        error={transactionStatus}
+        success={isTransactionSuccess===true}
+        submitting={isLoading}
+        successMessage="Charity submitted successfully!"
+      >
+        <FormInput
           value={purchaserName}
           onChange={(e) => setPurchaserName(e.target.value)}
+          label="Name"
           placeholder="Your name"
         />
 
-        <input
-          type="email"
+        <FormInput
           value={purchaserEmail}
           onChange={(e) => setPurchaserEmail(e.target.value)}
+          label="Email"
           placeholder="Your email"
         />
 
-        <input
-          type="text"
+        <FormInput
           value={recipientName}
           onChange={(e) => setRecipientName(e.target.value)}
+          label="Recipient name"
           placeholder="Recipient name"
         />
 
-        <input
-          type="email"
+        <FormInput
           value={recipientEmail}
-          onChange={handleRecipientEmailChange}
+          onChange={(e) => setRecipientEmail(e.target.value)}
+          label="Recipient email"
           placeholder="Recipient email"
         />
 
-        <label>
-          Select currency:
-          <select value={currency} onChange={handleCurrencyChange}>
-            <option value="USD">USD</option>
-            <option value="EUR">EUR</option>
-            <option value="AUD">AUD</option>
-            {/* Add more options as needed */}
-          </select>
-        </label>
-
-        <input
-          type="text"
-          value={customMessage}
-          onChange={(e) => setCustomMessage(e.target.value)}
-          placeholder="Your custom message"
+        <FormSelect
+          value={currency}
+          onChange={handleCurrencyChange}
+          label="Select currency"
+          options={[
+            { value: 'USD', label: 'USD' },
+            { value: 'EUR', label: 'EUR' },
+            { value: 'AUD', label: 'AUD' },
+            // Add more options as needed
+          ]}
         />
 
-        <input
-          type="text"
+        <FormTextarea
+          value={customMessage}
+          label="Your Message"
+          onChange={(e) => setCustomMessage(e.target.value)}
+        />
+
+        <FormNumber
           value={total}
-          onChange={handleTotalChange}
+          label="Donated Amount"
+          onChange={(e) => setTotal(Number(e.target.value))}
           placeholder="Gift card total"
         />
 
@@ -141,57 +146,7 @@ const GiftCardPage = () => {
           currency={currency}
           email={recipientEmail}
         />
-
-        {isLoading && <div>Processing your transaction...</div>}
-        {transactionStatus && (
-          <div className={isTransactionSuccess ? "success" : "error"}>
-            {transactionStatus}
-          </div>
-        )}
-
-        <style jsx>{`
-          .container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 1em;
-          }
-
-          h1 {
-            color: #333;
-            margin-bottom: 1em;
-          }
-
-          input {
-            margin-bottom: 0.5em;
-            padding: 0.5em;
-            width: 100%;
-            max-width: 300px;
-          }
-
-          label {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            width: 100%;
-            max-width: 300px;
-            margin-bottom: 0.5em;
-          }
-
-          select {
-            margin-left: 0.5em;
-          }
-
-          .success {
-            color: green;
-          }
-
-          .error {
-            color: red;
-          }
-        `}</style>
-      </div>
+        </Form>
     </Layout>
   );
 };

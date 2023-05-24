@@ -1,22 +1,30 @@
-// /pages/api/charities.ts
-import { NextApiRequest, NextApiResponse } from "next";
-import { PrismaClient } from "@prisma/client"; // Replace with your ORM
+import { NextApiRequest, NextApiResponse } from 'next';
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== "GET") {
-    return res.status(405).json({ message: "Method not allowed" });
-  }
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method === 'POST') {
+    const { name, description, logoUrl, homepageLink, donateUrl, stripeId } = req.body;
 
-  try {
-    const charities = await prisma.charity.findMany(); // Replace with your query
-    return res.status(200).json({ charities });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: "Internal Server Error" });
+    try {
+      const charity = await prisma.charity.create({
+        data: {
+          name,
+          description,
+          logoUrl,
+          homepageLink,
+          donateUrl,
+          stripeId,
+        },
+      });
+
+      res.status(200).json(charity);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to add the charity' });
+    }
+  } else {
+    res.status(405).json({ error: 'Method not allowed' });
   }
 }

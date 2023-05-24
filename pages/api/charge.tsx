@@ -85,7 +85,7 @@ export default async function handle(
       res.status(200).json({ status: "Your payment was successful" });
     } catch (error) {
       console.error(error);
-      res.status(500).json({ status: "Your payment failed", message: "" });
+      res.status(500).json({ status: "Your payment failed", message: String(error) });
     }
   } else {
     res.setHeader("Allow", "POST");

@@ -1,6 +1,7 @@
 import Layout from "./_layout";
 import Image from "next/image";
 import { PrismaClient } from "@prisma/client";
+import { useSession } from 'next-auth/react';
 import { GetStaticProps } from "next";
 import Link from "next/link";
 
@@ -17,6 +18,7 @@ type HomePageProps = {
 };
 
 const HomePage = ({ charities }: HomePageProps) => {
+  const { data: session } = useSession();
   return (
     <Layout>
       <h1 className="title">Welcome to QALY.shop</h1>
@@ -39,7 +41,14 @@ const HomePage = ({ charities }: HomePageProps) => {
           </li>
         ))}
       </ul>
-
+      {session && (
+        <div className="add-charity-button">
+          <Link href="/newcharity">
+            <span>Add Your Charity</span>
+          </Link>
+        </div>
+      )}
+      
       <style jsx>{`
         .title {
           text-align: center;
@@ -71,9 +80,14 @@ const HomePage = ({ charities }: HomePageProps) => {
           width: 100px;
           object-fit: cover;
         }
+
+        .add-charity-button {
+          text-align: center;
+          margin-top: 20px;
+        }
       `}</style>
     </Layout>
-  );
+  )
 };
 
 export const getStaticProps: GetStaticProps = async () => {
