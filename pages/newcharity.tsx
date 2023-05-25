@@ -1,6 +1,7 @@
 import { useState, ChangeEvent, FormEvent } from 'react';
-import { Form, FormInput, FormTextarea, FormButton, FormFileUploadButton } from 'components/Form'
+import { Form, FormInput, FormTextarea, FormButton } from 'components/Form'
 import Layout from "./_layout"
+import UploadImageButton from '@/components/UploadImageButton';
 
 const AddCharityPage: React.FC = () => {
   const [name, setName] = useState('');
@@ -78,30 +79,6 @@ const AddCharityPage: React.FC = () => {
     }
   };
 
-  const handleLogoFileSelect = async (file: File) => {
-    const response = await fetch('/api/uploadimage', {
-      method: 'POST',
-      body: JSON.stringify({ filename: file.name }),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    const { url } = await response.json();
-
-    const uploadResponse = await fetch(url, {
-      method: 'PUT',
-      body: file,
-      headers: {
-        'Content-Type': file.type,
-      },
-    });
-
-    if (uploadResponse.ok) {
-      console.log('Uploaded successfully!');
-    } else {
-      console.log('Upload failed.');
-    }
-  }
   return (
     <Layout>
       <Form
@@ -127,10 +104,10 @@ const AddCharityPage: React.FC = () => {
           required
         />
 
-        <FormFileUploadButton
-          onFileSelect={handleLogoFileSelect}
-          accept="image/*"
+        <UploadImageButton
+          onLogoUrl={setLogoUrl}
           buttonText="Upload Logo"
+          value={logoUrl}
         />
 
         <FormInput
@@ -148,7 +125,7 @@ const AddCharityPage: React.FC = () => {
           onChange={(e) => setDonateUrl(e.target.value)}
           required
         />
-        </Form>
+      </Form>
     </Layout>
   );
 };

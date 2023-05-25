@@ -1,38 +1,71 @@
-// pages/charities/[charityId].tsx
 import { GetServerSideProps } from 'next';
 import { PrismaClient } from '@prisma/client';
-import Link from 'next/link';
+import { Button, Box, Container, Typography } from '@material-ui/core';
+import { makeStyles } from '@material-ui/core/styles';
 import Layout from '../_layout';
+import { useSession } from "next-auth/react"
+import Link from 'next/link';
 
 const prisma = new PrismaClient();
+
+const useStyles = makeStyles((theme) => ({
+  charityContainer: {
+    maxWidth: '600px',
+    margin: '0 auto',
+    padding: theme.spacing(3),
+  },
+  charityLogo: {
+    width: '100%',
+    maxHeight: '300px',
+    objectFit: 'contain',
+  },
+  charityDescription: {
+    fontSize: '18px',
+    lineHeight: '1.6',
+    marginBottom: theme.spacing(2),
+  },
+  charityLinks: {
+    display: 'flex',
+    justifyContent: 'space-between',
+  },
+}));
 
 type Charity = {
   id: number;
   name: string;
   description: string;
   homepageLink: string;
-  logoLink: string;
-  donateLink: string;
+  logoUrl: string;
+  donateUrl: string;
 };
 
 type CharityPageProps = {
   charity: Charity;
 };
 
-const CharityPage: React.FC<CharityPageProps> = ({ charity }) => (
-  <Layout>
-    <h1>{charity.name}</h1>
-    <img src={charity.logoLink} alt={`${charity.name} logo`} />
-    <p>{charity.description}</p>
-    <Link href={charity.donateLink}>
-      <a>Donate</a>
-    </Link>
-    <Link href={charity.homepageLink}>
-      <a>Homepage</a>
-    </Link>
-    {/* Add charity evaluations section here */}
-  </Layout>
-);
+const CharityPage: React.FC<CharityPageProps> = ({ charity }) => {
+  const classes = useStyles();
+  const { data: session } = useSession();
+
+  return (
+    <Layout>
+      <Container className={classes.charityContainer}>
+        <Typography variant="h1">{charity.name}</Typography>
+        <img className={classes.charityLogo} src={charity.logoUrl} alt={`${charity.name} logo`} />
+        <Typography className={classes.charityDescription}>{charity.description}</Typography>
+        <Box className={classes.charityLinks}>
+          <Button variant="contained" color="primary" href={charity.donateUrl}>Donate</Button>
+          <Button variant="contained" color="primary" href={charity.homepageLink}>Homepage</Button>
+          {session && (
+            <Link href={`/charities/${charity.id}/edit`} passHref>
+              <Button variant="contained" color="primary">Edit</Button>
+            </Link>
+          )}
+        </Box>
+      </Container>
+    </Layout>
+  );
+}
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const { charityId } = context.params;

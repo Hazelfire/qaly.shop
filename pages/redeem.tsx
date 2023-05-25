@@ -3,6 +3,35 @@ import Layout from "./_layout";
 import NotFound from "./404";
 import { PrismaClient } from "@prisma/client";
 import { GetServerSideProps } from "next";
+import { Box, Button, Container, FormControl, FormLabel, InputLabel, MenuItem, Select, TextField, Typography, CircularProgress } from '@material-ui/core';
+import { makeStyles } from '@material-ui/core/styles';
+
+const useStyles = makeStyles((theme) => ({
+  container: {
+    maxWidth: '800px',
+    margin: '0 auto',
+    padding: theme.spacing(4),
+  },
+  donationForm: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    marginBottom: theme.spacing(2),
+  },
+  inputGroup: {
+    flex: 1,
+    '&:not(:last-child)': {
+      marginRight: theme.spacing(2),
+    },
+  },
+  submitButton: {
+    backgroundColor: '#0070f3',
+    color: '#fff',
+    marginTop: theme.spacing(2),
+    '&[disabled]': {
+      backgroundColor: '#ccc',
+    },
+  },
+}));
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
@@ -28,6 +57,8 @@ const RedeemPage: React.FC<RedeemPageProps> = ({
   charities,
   notFound,
 }) => {
+  const classes = useStyles();
+
   const [donations, setDonations] = useState<Donation[]>([
     {
       charityId: "",
@@ -96,95 +127,61 @@ const RedeemPage: React.FC<RedeemPageProps> = ({
 
   return (
     <Layout>
-      <div>
-        <h1>Redeem your gift card</h1>
-        <p>Gift Card Value: ${giftCard.value}</p>
+      <Container className={classes.container}>
+        <Typography variant="h1">Redeem your gift card</Typography>
+        <Typography>Gift Card Value: ${giftCard.value}</Typography>
         <form onSubmit={handleSubmit}>
           {donations.map((donation, index) => (
-            <div key={index}>
-              <label>Charity:</label>
-              <select
-                value={donation.charityId}
-                onChange={(e) => handleDonationIdChange(index, e.target.value)}
-                required
-              >
-                <option value="">--Select a charity--</option>
-                {charities.map((charity) => (
-                  <option key={charity.id} value={charity.id}>
-                    {charity.name}
-                  </option>
-                ))}
-              </select>
+            <Box key={index} className={classes.donationForm}>
+              <FormControl className={classes.inputGroup} variant="outlined">
+                <InputLabel id={`charity-label-${index}`}>Charity</InputLabel>
+                <Select
+                  labelId={`charity-label-${index}`}
+                  value={donation.charityId}
+                  onChange={(e) => handleDonationIdChange(index, e.target.value as string)}
+                  label="Charity"
+                  required
+                >
+                  <MenuItem value="">
+                    <em>--Select a charity--</em>
+                  </MenuItem>
+                  {charities.map((charity) => (
+                    <MenuItem key={charity.id} value={charity.id}>
+                      {charity.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
 
-              <label>Amount:</label>
-              <input
-                type="number"
-                min="1"
-                max={giftCard.value - (totalDonation - donation.amount)}
-                value={donation.amount}
-                onChange={(e) =>
-                  handleDonationAmountChange(index, e.target.value)
-                }
-                required
-              />
-            </div>
+              <FormControl className={classes.inputGroup}>
+                <FormLabel>Amount</FormLabel>
+                <TextField
+                  type="number"
+                  inputProps={{
+                    min: "1",
+                    max: giftCard.value - (totalDonation - donation.amount),
+                  }}
+                  value={donation.amount}
+                  onChange={(e) =>
+                    handleDonationAmountChange(index, e.target.value)
+                  }
+                  required
+                />
+              </FormControl>
+            </Box>
           ))}
           {totalDonation < giftCard.value && (
-            <button type="button" onClick={addDonation}>
+            <Button variant="contained" color="primary" onClick={addDonation}>
               Add more donations
-            </button>
+            </Button>
           )}
-          <button type="submit" disabled={totalDonation !== giftCard.value}>
+          <Button type="submit" disabled={totalDonation !== giftCard.value} className={classes.submitButton}>
             Submit
-          </button>
+          </Button>
         </form>
-        <style jsx>{`
-          .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 2rem;
-            font-family: Arial, sans-serif;
-          }
-
-          .donation-form {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 1rem;
-          }
-
-          .input-group {
-            flex: 1;
-          }
-
-          .input-group:not(:last-child) {
-            margin-right: 1rem;
-          }
-
-          select,
-          input {
-            width: 100%;
-            padding: 0.5rem;
-            font-size: 1rem;
-          }
-
-          button {
-            background-color: #0070f3;
-            color: white;
-            border: none;
-            padding: 1rem 2rem;
-            cursor: pointer;
-            font-size: 1rem;
-            margin-top: 1rem;
-          }
-
-          button[disabled] {
-            background-color: #ccc;
-            cursor: not-allowed;
-          }
-        `}</style>
-      </div>
-      {isLoading && <div>Loading...</div>}
-      {statusMessage && <div>{statusMessage}</div>}
+        {isLoading && <CircularProgress />}
+        {statusMessage && <Typography>{statusMessage}</Typography>}
+      </Container>
     </Layout>
   );
 };

@@ -4,6 +4,7 @@ import Stripe from "stripe";
 import { v4 as uuidv4 } from "uuid";
 import { Resend } from "resend";
 import { RecipientEmail, PurchaserEmail } from "./_emails"; // Import the email components
+import { addYears } from "date-fns";
 
 const resend = new Resend(process.env.RESEND_SECRET_KEY);
 
@@ -29,6 +30,10 @@ export default async function handle(
       currency,
     } = req.body; // added currency here
 
+    const receiveDate = req.body.receiveDate ? new Date(req.body.receiveDate) : new Date();
+    const purchaseDate = new Date();
+    const expiryDate = addYears(purchaseDate, 1);
+
     try {
       // Generate a UUID for the gift card
       const uuid = uuidv4();
@@ -51,6 +56,9 @@ export default async function handle(
           purchaserEmail,
           stripeChargeId: charge.id,
           currency,
+          receiveDate: receiveDate,
+          purchaseDate,
+          expiryDate
         },
       });
 

@@ -1,9 +1,10 @@
 import Layout from "./_layout";
-import Image from "next/image";
 import { PrismaClient } from "@prisma/client";
 import { useSession } from 'next-auth/react';
+import { Session } from 'next-auth';
 import { GetStaticProps } from "next";
 import Link from "next/link";
+import { CardMedia, Typography, Card, CardContent, Button, Container, Box, Grid } from '@material-ui/core';
 
 const prisma = new PrismaClient();
 type Charity = {
@@ -14,78 +15,50 @@ type Charity = {
 };
 
 type HomePageProps = {
-  charities: [];
+  charities: Charity[];
 };
 
 const HomePage = ({ charities }: HomePageProps) => {
   const { data: session } = useSession();
   return (
     <Layout>
-      <h1 className="title">Welcome to QALY.shop</h1>
-      <p>
-        At QALY.shop, we allow you to read up on the latest research and
-        cost-effectiveness estimates and buy QALYs either directly or through
-        gift cards.
-      </p>
-      <h2 className="subtitle">Charities</h2>
-      <ul className="charity-list">
-        {charities.map((charity: Charity) => (
-          <li key={charity.id} className="charity-item">
-            <Link href={`/charity/${charity.id}`}>
-              <a>
-                <Image src={charity.logoUrl} alt={`${charity.name} logo`} />
-                <h3>{charity.name}</h3>
-                <p>{charity.description}</p>
-              </a>
+      <Container>
+        <Typography variant="h1" align="center" gutterBottom>Welcome to QALY.shop</Typography>
+        <Typography variant="body1" align="justify" gutterBottom>
+          At QALY.shop, we allow you to read up on the latest research and
+          cost-effectiveness estimates and buy QALYs either directly or through
+          gift cards.
+        </Typography>
+        <Typography variant="h2" align="center" gutterBottom>Charities</Typography>
+        {charities.length === 0 && <Typography variant="body1" align="center" gutterBottom>We currently have no charities in the system</Typography>}
+        <Grid container spacing={2}>
+          {charities.map((charity: Charity) => (
+            <Grid item xs={12} sm={6} md={4} key={charity.id}>
+              <Link href={`/charities/${charity.id}`} passHref>
+                <Card>
+                  <CardMedia
+                    component="img"
+                    image={charity.logoUrl}
+                    alt={`${charity.name} logo`}
+                    title={charity.name}
+                  />
+                  <CardContent>
+                    <Typography variant="h5">{charity.name}</Typography>
+                    <Typography variant="body2">{charity.description}</Typography>
+                  </CardContent>
+                </Card>
+              </Link>
+            </Grid>
+          ))}
+        </Grid>
+        {session && (
+          <Box mt={4} display="flex" justifyContent="center">
+            <Link href="/newcharity" passHref>
+              <Button variant="contained" color="primary">Add Your Charity</Button>
             </Link>
-          </li>
-        ))}
-      </ul>
-      {session && (
-        <div className="add-charity-button">
-          <Link href="/newcharity">
-            <span>Add Your Charity</span>
-          </Link>
-        </div>
-      )}
-      
-      <style jsx>{`
-        .title {
-          text-align: center;
-          margin-top: 20px;
-        }
-
-        .subtitle {
-          text-align: center;
-          margin-top: 10px;
-        }
-
-        .charity-list {
-          list-style: none;
-          padding: 0;
-          display: flex;
-          flex-wrap: wrap;
-          justify-content: center;
-        }
-
-        .charity-item {
-          margin: 10px;
-          padding: 15px;
-          border: 1px solid #ccc;
-          border-radius: 5px;
-        }
-
-        img {
-          height: 100px;
-          width: 100px;
-          object-fit: cover;
-        }
-
-        .add-charity-button {
-          text-align: center;
-          margin-top: 20px;
-        }
-      `}</style>
+          </Box>
+        )}
+      </Container>
     </Layout>
   )
 };
